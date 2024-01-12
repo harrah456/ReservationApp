@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Web">
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net7.0</TargetFramework>
@@ -6,6 +6,18 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UserSecretsId>aspnet-ReserveApp-62370511-a3d5-4e56-b26f-d509856bddab</UserSecretsId>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="Areas\Identity\open-iconic\FONT-LICENSE" />
+    <Content Include="Areas\Identity\open-iconic\font\css\open-iconic-bootstrap.min.css" />
+    <Content Include="Areas\Identity\open-iconic\font\fonts\open-iconic.eot" />
+    <Content Include="Areas\Identity\open-iconic\font\fonts\open-iconic.otf" />
+    <Content Include="Areas\Identity\open-iconic\font\fonts\open-iconic.svg" />
+    <Content Include="Areas\Identity\open-iconic\font\fonts\open-iconic.ttf" />
+    <Content Include="Areas\Identity\open-iconic\font\fonts\open-iconic.woff" />
+    <Content Include="Areas\Identity\open-iconic\ICON-LICENSE" />
+    <Content Include="Areas\Identity\open-iconic\README.md" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="7.0.3" />

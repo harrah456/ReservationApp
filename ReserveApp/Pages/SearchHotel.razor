@@ -1,0 +1,90 @@
+﻿@page "/searchhotel"
+@using ReserveApp.Data
+@using ReserveApp.Services
+@inject HotelService hotelService
+
+<h3>Search Hotels</h3>
+
+<div>
+    <h4>All Hotels:</h4>
+    <form>
+        <div class="input-group  mb-3">
+            <div class="input-group-prepend form-floating">
+                @* <input asp-for="Input.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="username" /> *@
+                <input type="date" id="startDate" class="form-control" @bind="startDate" aria-required="true" />
+                <label asp-for="startDate" class="form-label">Start Date</label>
+                <span asp-validation-for="startDate" class="text-danger"></span>
+            </div>
+            <div class="form-floating">
+                @* <input asp-for="Input.Username" class="form-control" autocomplete="username" aria-required="true" placeholder="username" /> *@
+                <input type="date" id="endDate" class="form-control" @bind="endDate" aria-required="true" />
+                <label asp-for="endDate" class="form-label">End Date</label>
+                <span asp-validation-for="endDate" class="text-danger"></span>
+            </div>
+        </div>
+        <button class="btn btn-sm btn-primary" type="button" @onclick="SearchHotels">Search</button>
+    </form>
+    <div class="row">
+        @if (searchResults.Any())
+        {
+            <h4>Search Results:</h4>
+            @foreach (var hotel in searchResults)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@hotel.Name</h2>
+                    <div class="text-primary">
+                        Single: $@hotel.SingleBedPrice
+                        Double: $@hotel.DoubleBedPrice
+                        Suite: $@hotel.FamilySuitePrice
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>No results found.</p>
+            <hr />
+            @foreach (var hotel in allHotels)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@hotel.Name</h2>
+                    <div class="text-primary">
+                        Single: $@hotel.SingleBedPrice
+                        Double: $@hotel.DoubleBedPrice
+                        Suite: $@hotel.FamilySuitePrice
+                    </div>
+                </div>
+            }
+        }
+
+    </div>
+</div>
+
+<hr />
+
+@code {
+    private List<Hotel> allHotels = new List<Hotel>(); // Initialize with all hotels
+    private List<Hotel> searchResults = new List<Hotel>();
+    private DateTime? startDate = DateTime.Now;
+    private DateTime? endDate = DateTime.Now;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load all hotels when the page is initialized
+        allHotels = await hotelService.GetAllHotels();
+    }
+
+    private async Task SearchHotels()
+    {
+        if (startDate.HasValue && endDate.HasValue)
+        {
+            // Perform search based on hotels without reservations in the specified date range
+            searchResults = await hotelService.SearchHotelsByDateRange(startDate.Value, endDate.Value);
+        }
+        else
+        {
+            // No date range specified, display all hotels
+            searchResults = allHotels;
+        }
+    }
+}

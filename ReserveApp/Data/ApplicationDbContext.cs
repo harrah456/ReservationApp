@@ -8,6 +8,12 @@ namespace ReserveApp.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+
         }
+
+        public DbSet<Hotel> Hotels { get; set; }
+        public DbSet<Tour> Tours { get; set; }
+        public DbSet<Reservation> Reservations { get; set; }
+
     }
 }
