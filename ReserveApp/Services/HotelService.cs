@@ -3,7 +3,7 @@ using ReserveApp.Data;
 
 namespace ReserveApp.Services
 {
-    public class HotelService
+    public class HotelService : IHotelService
     {
         private ApplicationDbContext _context;
 
@@ -31,6 +31,18 @@ namespace ReserveApp.Services
             }
 
             return hotels;
+        }
+
+        public async Task<bool> HotelAvailableByDateRange(Hotel hotel, DateTime startDate, DateTime endDate)
+        {
+            var hotels = await _context.Hotels
+                .Where(h => h.HotelId == hotel.HotelId && !h.Reservations.Any(r =>
+                (r.ReservationStartDate <= startDate && r.ReservationEndDate >= startDate) ||
+                (r.ReservationStartDate <= endDate && r.ReservationEndDate >= endDate))).ToListAsync();
+
+            //hotel.AvailableRooms = CalculateAvailableRooms(hotel, startDate, endDate);
+
+            return hotels.Count() > 0;
         }
 
         private Dictionary<RoomType, int> CalculateAvailableRooms(Hotel hotel, DateTime startDate, DateTime endDate)

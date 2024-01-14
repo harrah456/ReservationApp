@@ -11,9 +11,7 @@ namespace ReserveApp.Data
         public decimal SingleBedPrice { get; set; }
         public decimal DoubleBedPrice { get; set; }
         public decimal FamilySuitePrice { get; set; }
-        //public int SingleBedCapacity { get; set; } = 20;
-        //public int DoubleBedCapacity { get; set; } = 20;
-        //public int FamilySuiteCapacity { get; set; } = 20;
+
         public List<Reservation> Reservations { get; set; } = new List<Reservation>();
 
         // Add the AvailableRooms property

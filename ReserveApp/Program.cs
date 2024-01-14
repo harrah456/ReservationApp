@@ -25,8 +25,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<User>>();
 //builder.Services.AddSingleton<WeatherForecastService>();
-builder.Services.AddScoped<HotelService>();
+builder.Services.AddScoped<IHotelService, HotelService>();
 builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<ITourService, TourService>();
 
 
 var app = builder.Build();

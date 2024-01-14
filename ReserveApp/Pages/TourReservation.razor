@@ -1,7 +1,7 @@
 ﻿@using ReserveApp.Data
 @using ReserveApp.Services
 @inject IReservationService reservationService
-@inject IHotelService hotelService
+@inject ITourService tourService
 
 <div class="modal" style="display: @(showModal ? "block" : "none")">
     <div class="modal-dialog" role="document">
@@ -13,13 +13,12 @@
             <div class="modal-body">
                 <!-- Include form fields for reservation details -->
                 <div>
-                    @if (selectedHotel != null)
+                    @if (selectedTour != null)
                     {
-                        <h6>@selectedHotel.Name</h6>
+                        <h6>@selectedTour.Name</h6>
                         <p>
-                            Single: $@selectedHotel.SingleBedPrice
-                            Double: $@selectedHotel.DoubleBedPrice
-                            Suite: $@selectedHotel.FamilySuitePrice
+                            Cost: $@selectedTour.Cost <br/>
+                            Available Space: $@selectedTour.AvailableSpaces
                         </p>
                     }
 
@@ -30,38 +29,18 @@
                         <label asp-for="startDate" class="form-label">Start Date</label>
                         <span asp-validation-for="startDate" class="text-danger"></span>
                     </div>
-                    <div class="form-floating">
-                        <input type="date" id="endDate" readonly="readonly" class="form-control" @bind="endDate" aria-required="true" />
-                        <label asp-for="endDate" class="form-label">End Date</label>
-                        <span asp-validation-for="endDate" class="text-danger"></span>
-                    </div>
                 </div>
                 <div class="text-danger">@errorText</div>
+                
                 <div class="form-group row">
-                    <label class="col-6" for="roomType">Room Type:</label>
+                    <label class="col-6" for="numberOfSpace">Number of Space:</label>
                     <div class="col-6">
-                        <select class="form-control-sm" id="roomType" @bind="selectedRoomType">
-                            <option value="Single">Single</option>
-                            <option value="Double">Double</option>
-                            <option value="FamilySuite">Family Suite</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <label class="col-6" for="numberOfAdults">Number of Adults:</label>
-                    <div class="col-6">
-                        <input class="form-control-sm" type="number" id="numberOfAdults" @bind="numberOfAdults" />
-                    </div>
-                </div>
-                <div class="form-group row">
-                    <label class="col-6" for="numberOfChildren">Number of Children:</label>
-                    <div class="col-6">
-                        <input class="form-control-sm" type="number" id="numberOfChildren" @bind="numberOfChildren" />
+                        <input class="form-control-sm" type="number" id="numberOfSpace" @bind="numberOfSpace" />
                     </div>
                 </div>
                 <div class="form-group row">
                     <div class="col-6">
-                        <label for="numberOfChildren">Total Amount:</label>
+                        <label>Total Amount:</label>
                         <button class="btn btn-sm btn-outline-secondary" type="button" @onclick="CalculateTotalAmount">Calculate</button>
                     </div>
                     <div class="col-6">
@@ -86,11 +65,9 @@
 
 @code {
     private string errorText = ":";
-    private RoomType selectedRoomType = RoomType.Single;
-    private int numberOfAdults = 1;
-    private int numberOfChildren = 0;
+    private int numberOfSpace = 1;
     private bool showModal = false; // Add this state variable
-    private Hotel selectedHotel = new();
+    private Tour selectedTour = new();
     private DateTime startDate { get; set; } = DateTime.Now;
     private DateTime endDate { get; set; } = DateTime.Now;
     private decimal totalAmount { get; set; }
@@ -101,9 +78,9 @@
     public EventCallback OnReservationComplete { get; set; }
 
 
-    public void Show(Hotel hotel, DateTime date1, DateTime date2, string userId)
+    public void Show(Tour tour, DateTime date1, DateTime date2, string userId)
     {
-        selectedHotel = hotel;
+        selectedTour = tour;
         startDate = date1;
         endDate = date2;
         _userId = userId;
@@ -115,21 +92,15 @@
         await InvokeAsync(() =>
         {
             errorText = ":";
-            // if (!hotelService.HotelAvailableByDateRange(selectedHotel, startDate, endDate).Result)
+            // if (!tourService.TourAvailableByDateRange(selectedTour, startDate, endDate).Result)
             // {
             //     errorText = "Not available";
             //     return;
             // }
             // Calculate total amount when either date range or room type changes
-            if (selectedRoomType != null)
+            if (numberOfSpace > 0)
             {
-                // Calculate the number of days for the reservation
-
-                int numberOfDays = (int)(endDate.Date - startDate.Date).TotalDays + 1;
-
-                // Calculate the total amount based on the selected room type and number of days
-                decimal roomTypePrice = GetRoomTypePrice(selectedRoomType);
-                totalAmount = roomTypePrice * numberOfDays;
+                totalAmount = selectedTour.Cost * numberOfSpace;
             }
             else
             {
@@ -139,10 +110,7 @@
             StateHasChanged();
         });
     }
-    private decimal GetRoomTypePrice(RoomType roomType)
-    {
-        return roomType == RoomType.Single ? selectedHotel.SingleBedPrice : roomType == RoomType.Double ? selectedHotel.DoubleBedPrice : selectedHotel.FamilySuitePrice;
-    }
+    
     private async void Reserve()
     {
         errorText = ":";
@@ -150,35 +118,26 @@
         // Check if start date is before or equal to end date
         if (startDate <= endDate)
         {
-            // if (!hotelService.HotelAvailableByDateRange(selectedHotel, startDate, endDate).Result)
+            // if (!tourService.TourAvailableByDateRange(selectedTour, startDate, endDate).Result)
             // {
             //     errorText = "Not available";
             //     return;
             // }
-            // Check if the selected room type is Single and the number of adults is more than 1
-            if (selectedRoomType == RoomType.Single && numberOfAdults > 1)
-            {
-                // reset numberOfAdults to 1
-                numberOfAdults = 1;
-
-                // You can also return or throw an exception, depending on your error handling strategy
-                return;
-            }
+            
             // Calculate the number of days for the reservation
-            //int numberOfDays = (int)(endDate - startDate).TotalDays + 1;
+            endDate = startDate.AddDays(selectedTour.Days);
 
             // Implement the logic to create and save the reservation for each day in the range
 
             // Create and save the reservation for each day
             Reservation reservation = new Reservation
                 {
-                    HotelId = selectedHotel.HotelId,
+                    TourId = selectedTour.TourId,
                     CustomerId = _userId,
                     ReservationStartDate = startDate,
                     ReservationEndDate = endDate, // Assuming the reservation is for a single day
-                    RoomType = selectedRoomType,
-                    NumberOfAdults = numberOfAdults,
-                    NumberOfChildren = numberOfChildren,
+                    NumberOfAdults = numberOfSpace,
+                    NumberOfChildren = 0,
                     // Other reservation details
 
                     // Calculate and set deposit and total amount based on your logic

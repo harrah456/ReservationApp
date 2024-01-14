@@ -1,15 +1,15 @@
-﻿@page "/searchhotel"
+﻿@page "/searchtour"
 @using ReserveApp.Data
 @using ReserveApp.Services
 @using System.Security.Claims
-@inject IHotelService hotelService
+@inject ITourService tourService
 @inject NavigationManager navigationManager
 @inject AuthenticationStateProvider authenticationStateProvider
 
-<h3>Search Hotels</h3>
+<h3>Search Tours</h3>
 <div class="text-success">@successText</div>
 <div>
-    <h4>All Hotels:</h4>
+    <h4>All Tours:</h4>
     <form>
         <div class="input-group  mb-3">
             <div class="input-group-prepend form-floating">
@@ -23,22 +23,21 @@
                 <span asp-validation-for="endDate" class="text-danger"></span>
             </div>
         </div>
-        <button class="btn btn-sm btn-primary" type="button" @onclick="SearchHotels">Search</button>
+        <button class="btn btn-sm btn-primary" type="button" @onclick="SearchTours">Search</button>
     </form>
     <div class="row">
         @if (searchResults.Any())
         {
             <h4>Search Results:</h4>
-            @foreach (var hotel in searchResults)
+            @foreach (var tour in searchResults)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
-                    <h2>@hotel.Name</h2>
+                    <h2>@tour.Name</h2>
                     <div class="text-primary">
-                        Single: $@hotel.SingleBedPrice ( @hotel.AvailableRooms[RoomType.Single] )
-                        Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
-                        Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
+                        Cost: $@tour.Cost <br/>
+                        Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(hotel)">Make Reservation</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(tour)">Make Reservation</button>
                         </div>
                     </div>
                 </div>
@@ -48,16 +47,15 @@
         {
             @* <p>No results found.</p>
         <hr /> *@
-            @foreach (var hotel in allHotels)
+            @foreach (var tour in allTours)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
-                    <h2>@hotel.Name</h2>
+                    <h2>@tour.Name</h2>
                     <div class="text-primary">
-                        Single: $@hotel.SingleBedPrice ( @hotel.AvailableRooms[RoomType.Single] )
-                        Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
-                        Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
+                        Cost: $@tour.Cost <br />
+                        Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(hotel)">Make Reservation</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(tour)">Make Reservation</button>
                         </div>
                     </div>
                 </div>
@@ -69,25 +67,25 @@
 
 <hr />
 
-<HotelReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
+<TourReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
 
 @code {
     private string successText = ":";
-    private List<Hotel> allHotels = new List<Hotel>(); // Initialize with all hotels
-    private List<Hotel> searchResults = new List<Hotel>();
+    private List<Tour> allTours = new List<Tour>(); // Initialize with all tours
+    private List<Tour> searchResults = new List<Tour>();
     private DateTime? startDate = DateTime.Now;
     private DateTime? endDate = DateTime.Now;
 
     private string userId;
 
-    private Hotel selectedHotel;
-    private HotelReservation reservationModal;
+    private Tour selectedTour;
+    private TourReservation reservationModal;
 
     protected override async Task OnInitializedAsync()
     {
-        // Load all hotels when the page is initialized
+        // Load all tours when the page is initialized
 
-        await LoadHotelData();
+        await LoadTourData();
 
         var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
         var user = authState.User;
@@ -97,36 +95,36 @@
 
     }
 
-    private async Task SearchHotels()
+    private async Task SearchTours()
     {
         if (startDate.HasValue && endDate.HasValue)
         {
-            // Perform search based on hotels without reservations in the specified date range
-            searchResults = await hotelService.SearchHotelsByDateRange(startDate.Value, endDate.Value);
+            // Perform search based on tours without reservations in the specified date range
+            searchResults = await tourService.SearchToursByDateRange(startDate.Value, endDate.Value);
         }
         else
         {
-            // No date range specified, display all hotels
-            searchResults = allHotels;
+            // No date range specified, display all tours
+            searchResults = allTours;
         }
     }
 
-    private void InitiateReservation(Hotel hotel)
+    private void InitiateReservation(Tour tour)
     {
         // Show the reservation modal or navigate to reservation page
-        selectedHotel = hotel;
-        reservationModal.Show(selectedHotel, (DateTime)startDate, (DateTime)endDate, userId);
+        selectedTour = tour;
+        reservationModal.Show(selectedTour, (DateTime)startDate, (DateTime)endDate, userId);
     }
 
     private async Task HandleReservationComplete()
     {
         successText = "Reservation Completed";
-        // refresh the hotel data
-        await LoadHotelData();
+        // refresh the tour data
+        await LoadTourData();
     }
 
-    private async Task LoadHotelData()
+    private async Task LoadTourData()
     {
-        allHotels = await hotelService.GetAllHotels();
+        allTours = await tourService.GetAllTours();
     }
 }
