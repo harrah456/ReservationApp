@@ -1,0 +1,132 @@
+﻿@page "/searchholiday"
+@using ReserveApp.Data
+@using ReserveApp.Services
+@using System.Security.Claims
+@inject IHolidayService holidayService
+@inject NavigationManager navigationManager
+@inject AuthenticationStateProvider authenticationStateProvider
+
+<h3>Search Holidays</h3>
+<div class="text-success">@successText</div>
+<div>
+    <h4>All Holidays:</h4>
+    <form>
+        <div class="input-group  mb-3">
+            <div class="input-group-prepend form-floating">
+                <input type="date" id="startDate" class="form-control" @bind="startDate" aria-required="true" />
+                <label asp-for="startDate" class="form-label">Start Date</label>
+                <span asp-validation-for="startDate" class="text-danger"></span>
+            </div>
+            <div class="form-floating">
+                <input type="date" id="endDate" class="form-control" @bind="endDate" aria-required="true" />
+                <label asp-for="endDate" class="form-label">End Date</label>
+                <span asp-validation-for="endDate" class="text-danger"></span>
+            </div>
+        </div>
+        <button class="btn btn-sm btn-primary" type="button" @onclick="SearchHolidays">Search</button>
+    </form>
+    <div class="row">
+        @if (searchResults.Any())
+        {
+            <h4>Search Results:</h4>
+            @foreach (var holiday in searchResults)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@holiday.Name</h2>
+                    <div class="text-primary">
+                        Single: $@holiday.SingleBedPrice ( @holiday.AvailableRooms[RoomType.Single] )
+                        Double: $@holiday.DoubleBedPrice ( @holiday.AvailableRooms[RoomType.Double] )
+                        Suite: $@holiday.FamilySuitePrice ( @holiday.AvailableRooms[RoomType.FamilySuite] )
+                        <div>
+                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(holiday)">Make Reservation</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            @* <p>No results found.</p>
+        <hr /> *@
+            @foreach (var holiday in allHolidays)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@holiday.Name</h2>
+                    <div class="text-primary">
+                        Single: $@holiday.SingleBedPrice ( @holiday.AvailableRooms[RoomType.Single] )
+                        Double: $@holiday.DoubleBedPrice ( @holiday.AvailableRooms[RoomType.Double] )
+                        Suite: $@holiday.FamilySuitePrice ( @holiday.AvailableRooms[RoomType.FamilySuite] )
+                        <div>
+                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(holiday)">Make Reservation</button>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+
+    </div>
+</div>
+
+<hr />
+
+<HolidayReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
+
+@code {
+    private string successText = ":";
+    private List<Holiday> allHolidays = new List<Holiday>(); // Initialize with all holidays
+    private List<Holiday> searchResults = new List<Holiday>();
+    private DateTime? startDate = DateTime.Now;
+    private DateTime? endDate = DateTime.Now;
+
+    private string userId;
+
+    private Holiday selectedHoliday;
+    private HolidayReservation reservationModal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Load all holidays when the page is initialized
+
+        await LoadHolidayData();
+
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        // Get the user ID
+        userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+    }
+
+    private async Task SearchHolidays()
+    {
+        if (startDate.HasValue && endDate.HasValue)
+        {
+            // Perform search based on holidays without reservations in the specified date range
+            searchResults = await holidayService.SearchHolidaysByDateRange(startDate.Value, endDate.Value);
+        }
+        else
+        {
+            // No date range specified, display all holidays
+            searchResults = allHolidays;
+        }
+    }
+
+    private void InitiateReservation(Holiday holiday)
+    {
+        // Show the reservation modal or navigate to reservation page
+        selectedHoliday = holiday;
+        reservationModal.Show(selectedHoliday, (DateTime)startDate, (DateTime)endDate, userId);
+    }
+
+    private async Task HandleReservationComplete()
+    {
+        successText = "Reservation Completed";
+        // refresh the holiday data
+        await LoadHolidayData();
+    }
+
+    private async Task LoadHolidayData()
+    {
+        allHolidays = await holidayService.GetAllHolidays();
+    }
+}
