@@ -2,7 +2,8 @@
 @using ReserveApp.Data
 @using ReserveApp.Services
 @using System.Security.Claims
-@inject IHolidayService holidayService
+@inject IHotelService hotelService
+@inject ITourService tourService
 @inject NavigationManager navigationManager
 @inject AuthenticationStateProvider authenticationStateProvider
 
@@ -26,19 +27,34 @@
         <button class="btn btn-sm btn-primary" type="button" @onclick="SearchHolidays">Search</button>
     </form>
     <div class="row">
-        @if (searchResults.Any())
+        @if (searchTours.Any() && searchHotels.Any())
         {
             <h4>Search Results:</h4>
-            @foreach (var holiday in searchResults)
+            <h5>Tours</h5>
+            @foreach (var tour in searchTours)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
-                    <h2>@holiday.Name</h2>
+                    <h2>@tour.Name</h2>
                     <div class="text-primary">
-                        Single: $@holiday.SingleBedPrice ( @holiday.AvailableRooms[RoomType.Single] )
-                        Double: $@holiday.DoubleBedPrice ( @holiday.AvailableRooms[RoomType.Double] )
-                        Suite: $@holiday.FamilySuitePrice ( @holiday.AvailableRooms[RoomType.FamilySuite] )
+                        Cost: $@tour.Cost <br />
+                        Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(holiday)">Make Reservation</button>
+                            <button class="btn btn-outline-@(selectedTour.TourId == tour.TourId ? "success" : "secondary")" @onclick="() => SelectTour(tour)">Select</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            <h5>Hotels</h5>
+            @foreach (var hotel in searchHotels)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@hotel.Name</h2>
+                    <div class="text-primary">
+                        Single: $@hotel.SingleBedPrice ( @hotel.AvailableRooms[RoomType.Single] )
+                        Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
+                        Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
+                        <div>
+                            <button class="btn btn-outline-@(selectedHotel.HotelId == hotel.HotelId ? "success" : "secondary")" @onclick="() => SelectHotel(hotel)">Select</button>
                         </div>
                     </div>
                 </div>
@@ -48,16 +64,30 @@
         {
             @* <p>No results found.</p>
         <hr /> *@
-            @foreach (var holiday in allHolidays)
+            @foreach (var tour in searchTours)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
-                    <h2>@holiday.Name</h2>
+                    <h2>@tour.Name</h2>
                     <div class="text-primary">
-                        Single: $@holiday.SingleBedPrice ( @holiday.AvailableRooms[RoomType.Single] )
-                        Double: $@holiday.DoubleBedPrice ( @holiday.AvailableRooms[RoomType.Double] )
-                        Suite: $@holiday.FamilySuitePrice ( @holiday.AvailableRooms[RoomType.FamilySuite] )
+                        Cost: $@tour.Cost <br />
+                        Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-secondary" @onclick="() => InitiateReservation(holiday)">Make Reservation</button>
+                            <button class="btn btn-outline-@(selectedTour.TourId == tour.TourId ? "success" : "secondary")" @onclick="() => SelectTour(tour)">Select</button>
+                        </div>
+                    </div>
+                </div>
+            }
+            <h5>Hotels</h5>
+            @foreach (var hotel in searchHotels)
+            {
+                <div class="col-6 mb-3" style="border: 1px solid #eee;">
+                    <h2>@hotel.Name</h2>
+                    <div class="text-primary">
+                        Single: $@hotel.SingleBedPrice ( @hotel.AvailableRooms[RoomType.Single] )
+                        Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
+                        Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
+                        <div>
+                            <button class="btn btn-outline-@(selectedHotel.HotelId == hotel.HotelId ? "success" : "secondary")" @onclick="() => SelectHotel(hotel)">Select</button>
                         </div>
                     </div>
                 </div>
@@ -73,14 +103,17 @@
 
 @code {
     private string successText = ":";
-    private List<Holiday> allHolidays = new List<Holiday>(); // Initialize with all holidays
-    private List<Holiday> searchResults = new List<Holiday>();
+    private List<Hotel> allHotels = new List<Hotel>();
+    private List<Tour> allTours = new List<Tour>();
+    private List<Hotel> searchHotels = new List<Hotel>();
+    private List<Tour> searchTours = new List<Tour>();
     private DateTime? startDate = DateTime.Now;
     private DateTime? endDate = DateTime.Now;
 
     private string userId;
 
-    private Holiday selectedHoliday;
+    private Hotel selectedHotel;
+    private Tour selectedTour;
     private HolidayReservation reservationModal;
 
     protected override async Task OnInitializedAsync()
@@ -102,20 +135,30 @@
         if (startDate.HasValue && endDate.HasValue)
         {
             // Perform search based on holidays without reservations in the specified date range
-            searchResults = await holidayService.SearchHolidaysByDateRange(startDate.Value, endDate.Value);
+            searchHotels = await hotelService.SearchHotelsByDateRange(startDate.Value, endDate.Value);
+            searchTours = await tourService.SearchToursByDateRange(startDate.Value, endDate.Value);
         }
         else
         {
             // No date range specified, display all holidays
-            searchResults = allHolidays;
+            searchHotels = allHotels;
+            searchTours = allTours;
         }
     }
 
-    private void InitiateReservation(Holiday holiday)
+    private void SelectHotel(Hotel hotel)
+    {
+        selectedHotel = hotel;
+    }
+    private void SelectTour(Tour tour)
+    {
+        selectedTour = tour;
+    }
+
+    private void InitiateReservation()
     {
         // Show the reservation modal or navigate to reservation page
-        selectedHoliday = holiday;
-        reservationModal.Show(selectedHoliday, (DateTime)startDate, (DateTime)endDate, userId);
+        reservationModal.Show(selectedHotel, selectedTour, (DateTime)startDate.Value, (DateTime)startDate.Value.AddDays(selectedTour.Days), userId);
     }
 
     private async Task HandleReservationComplete()
@@ -127,6 +170,7 @@
 
     private async Task LoadHolidayData()
     {
-        allHolidays = await holidayService.GetAllHolidays();
+        allHotels = await hotelService.GetAllHotels();
+        allTours = await tourService.GetAllTours();
     }
 }

@@ -7,7 +7,9 @@ namespace ReserveApp.Data
         [Key]
         public int ReservationId { get; set; }
         public int? HotelId { get; set; }
+        public Hotel? Hotel { get; set; }
         public int? TourId { get; set; }
+        public Tour? Tour { get; set; }
         public required string CustomerId { get; set; }
         public DateTime ReservationStartDate { get; set; }
         public DateTime ReservationEndDate { get; set; }
@@ -18,6 +20,7 @@ namespace ReserveApp.Data
         public decimal DepositAmount { get; set; }
         public bool IsConfirmed { get; set; }
         public DateTime? ConfirmationDate { get; set; }
+
     }
 
     public enum RoomType
