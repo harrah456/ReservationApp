@@ -7,7 +7,11 @@
 @inject NavigationManager navigationManager
 @inject AuthenticationStateProvider authenticationStateProvider
 
+
+
 <h3>Search Holidays</h3>
+<AuthorizeView>
+    <Authorized>
 <div class="text-success">@successText</div>
 <div>
     <h4>All Holidays:</h4>
@@ -27,9 +31,26 @@
         <button class="btn btn-sm btn-primary" type="button" @onclick="SearchHolidays">Search</button>
     </form>
     <div class="row">
-        @if (searchTours.Any() && searchHotels.Any())
+        <div class="col-12">
+            @if (selectedTour != null)
+            {
+                <div>Selected Tour: @selectedTour.Name</div>
+            }
+            @if (selectedHotel != null)
+            {
+                <div>Selected Hotel: @selectedHotel.Name</div>
+            }
+            @if(selectedTour != null && selectedHotel != null)
+            {
+                <button class="btn btn-primary" @onclick="InitiateReservation">Make Reserve</button>
+            }
+        </div>
+    </div>
+    <div class="row">
+        @if (searchTours != null && searchHotels != null)
         {
             <h4>Search Results:</h4>
+
             <h5>Tours</h5>
             @foreach (var tour in searchTours)
             {
@@ -39,7 +60,7 @@
                         Cost: $@tour.Cost <br />
                         Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-@(selectedTour.TourId == tour.TourId ? "success" : "secondary")" @onclick="() => SelectTour(tour)">Select</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => SelectTour(tour)">Select</button>
                         </div>
                     </div>
                 </div>
@@ -54,17 +75,18 @@
                         Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
                         Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
                         <div>
-                            <button class="btn btn-outline-@(selectedHotel.HotelId == hotel.HotelId ? "success" : "secondary")" @onclick="() => SelectHotel(hotel)">Select</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => SelectHotel(hotel)">Select</button>
                         </div>
                     </div>
                 </div>
             }
+
         }
         else
         {
             @* <p>No results found.</p>
         <hr /> *@
-            @foreach (var tour in searchTours)
+            @foreach (var tour in allTours)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
                     <h2>@tour.Name</h2>
@@ -72,13 +94,13 @@
                         Cost: $@tour.Cost <br />
                         Available Spaces: @tour.AvailableSpaces
                         <div>
-                            <button class="btn btn-outline-@(selectedTour.TourId == tour.TourId ? "success" : "secondary")" @onclick="() => SelectTour(tour)">Select</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => SelectTour(tour)">Select</button>
                         </div>
                     </div>
                 </div>
             }
             <h5>Hotels</h5>
-            @foreach (var hotel in searchHotels)
+            @foreach (var hotel in allHotels)
             {
                 <div class="col-6 mb-3" style="border: 1px solid #eee;">
                     <h2>@hotel.Name</h2>
@@ -87,7 +109,7 @@
                         Double: $@hotel.DoubleBedPrice ( @hotel.AvailableRooms[RoomType.Double] )
                         Suite: $@hotel.FamilySuitePrice ( @hotel.AvailableRooms[RoomType.FamilySuite] )
                         <div>
-                            <button class="btn btn-outline-@(selectedHotel.HotelId == hotel.HotelId ? "success" : "secondary")" @onclick="() => SelectHotel(hotel)">Select</button>
+                            <button class="btn btn-outline-secondary" @onclick="() => SelectHotel(hotel)">Select</button>
                         </div>
                     </div>
                 </div>
@@ -100,7 +122,11 @@
 <hr />
 
 <HolidayReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
-
+    </Authorized>
+    <NotAuthorized>
+        Please login first
+    </NotAuthorized>
+</AuthorizeView>
 @code {
     private string successText = ":";
     private List<Hotel> allHotels = new List<Hotel>();
@@ -164,6 +190,8 @@
     private async Task HandleReservationComplete()
     {
         successText = "Reservation Completed";
+        selectedHotel = null;
+        selectedTour = null;
         // refresh the holiday data
         await LoadHolidayData();
     }

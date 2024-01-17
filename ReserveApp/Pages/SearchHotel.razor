@@ -7,6 +7,8 @@
 @inject AuthenticationStateProvider authenticationStateProvider
 
 <h3>Search Hotels</h3>
+<AuthorizeView>
+    <Authorized>
 <div class="text-success">@successText</div>
 <div>
     <h4>All Hotels:</h4>
@@ -70,7 +72,11 @@
 <hr />
 
 <HotelReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
-
+</Authorized>
+    <NotAuthorized>
+        Please login first
+    </NotAuthorized>
+</AuthorizeView>
 @code {
     private string successText = ":";
     private List<Hotel> allHotels = new List<Hotel>(); // Initialize with all hotels

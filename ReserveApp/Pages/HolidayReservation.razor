@@ -157,11 +157,6 @@
         // Check if start date is before or equal to end date
         if (startDate <= endDate)
         {
-            if(selectedRoomType != null)
-            {
-                errorText = "Select a Room Type";
-                return;
-            }
             // Check if the selected room type is Single and the number of adults is more than 1
             if (selectedRoomType == RoomType.Single && numberOfAdults > 1)
             {

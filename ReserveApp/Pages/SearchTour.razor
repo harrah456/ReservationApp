@@ -7,6 +7,8 @@
 @inject AuthenticationStateProvider authenticationStateProvider
 
 <h3>Search Tours</h3>
+<AuthorizeView>
+    <Authorized>
 <div class="text-success">@successText</div>
 <div>
     <h4>All Tours:</h4>
@@ -68,7 +70,11 @@
 <hr />
 
 <TourReservation @ref="reservationModal" OnReservationComplete="HandleReservationComplete" />
-
+</Authorized>
+    <NotAuthorized>
+        Please login first
+    </NotAuthorized>
+</AuthorizeView>
 @code {
     private string successText = ":";
     private List<Tour> allTours = new List<Tour>(); // Initialize with all tours
