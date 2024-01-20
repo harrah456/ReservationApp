@@ -26,8 +26,9 @@ builder.Services.AddServerSideBlazor();
 builder.Services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<User>>();
 //builder.Services.AddSingleton<WeatherForecastService>();
 builder.Services.AddScoped<IHotelService, HotelService>();
-builder.Services.AddScoped<IReservationService, ReservationService>();
+builder.Services.AddScoped<IReservatonService, ReservationService>();
 builder.Services.AddScoped<ITourService, TourService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 
 var app = builder.Build();

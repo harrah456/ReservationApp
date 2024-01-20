@@ -1,0 +1,122 @@
+﻿@using ReserveApp.Data
+@using ReserveApp.Services
+@inject IReservatonService reservationService
+@inject IPaymentService paymentService
+
+<div class="modal" style="display: @(showModal ? "block" : "none")">
+    <div class="modal-dialog" role="document">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Make Payment</h3>
+            </div>
+            @if (selectedReservation != null)
+            {
+                <div class="modal-body">
+
+                    From: @selectedReservation.ReservationStartDate to @selectedReservation.ReservationEndDate
+
+                    @if (selectedReservation.Tour != null)
+                    {
+                        <div>
+                            <h6>@selectedReservation.Tour.Name</h6>
+                        </div>
+                    }
+                    @if (selectedReservation.Hotel != null)
+                    {
+                        <div>
+                            <h6>@selectedReservation.Hotel.Name</h6>
+                        </div>
+                    }
+
+                    <div class="text-danger">@errorText</div>
+
+                    <div class="form-group row">
+                        <div class="col-6">
+                            <label>Due Amount:</label>
+                        </div>
+                        <div class="col-6">
+                            <input class="form-control-sm" type="number" readonly="readonly" id="dueAmount" value="@dueAmount" />
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-6" for="numberOfChildren">Deposit Amount:</label>
+                        <div class="col-6">
+                            <input class="form-control-sm" type="number" min="1" id="depositAmount" @bind="@depositAmount" />
+                        </div>
+                    </div>
+                    <!-- Include other form fields as needed -->
+                </div>
+                <div class="modal-footer">
+                    <button @onclick="PayNow">Pay Now</button>
+                    <button @onclick="CloseModal">Close</button>
+                </div>
+
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string errorText = ":";
+    private bool showModal = false; // Add this state variable
+    private Reservation selectedReservation { get; set; } = null;
+    private decimal depositAmount = 0;
+    private decimal dueAmount = 0;
+
+    [Parameter]
+    public EventCallback<Payment> OnPaymentComplete { get; set; }
+
+    public async Task Show(Reservation reservation)
+    {
+        selectedReservation =  await reservationService.GetReservationById(reservation.ReservationId); // included hotel and/or tour
+        dueAmount = selectedReservation.TotalAmount - selectedReservation.DepositAmount;
+        errorText = ":";
+        showModal = true;
+    }
+
+    private async Task PayNow()
+    {
+        errorText = ":";
+        if (DateTime.Now > selectedReservation.ReservationStartDate.AddDays(-28))
+        {
+            errorText = ": This reservation is not valid now. You should pay 28 days before Reservation Date";
+            return;
+        }
+        if (depositAmount > 0 && depositAmount <= dueAmount)
+        {
+            // Save the payment to the database
+            Payment payment = new Payment
+                {
+                    PaymentDate = DateTime.Now,
+                    Amount = depositAmount,
+                    ReservationId = selectedReservation.ReservationId
+                };
+            Payment? savedPayment = await paymentService.CreatePayment(payment);
+            if (savedPayment != null)
+            {
+                // Notify the parent component about the payment completion
+                await OnPaymentComplete.InvokeAsync(savedPayment);
+
+                // Close the modal
+                CloseModal();
+            }
+            else
+            {
+                errorText = ": Payment Not Saved";
+            }
+        }
+        else
+        {
+            errorText = ": Provide Correct Amount Please";
+        }
+    }
+
+
+    private void CloseModal()
+    {
+        // close the modal
+        showModal = false;
+
+    }
+}

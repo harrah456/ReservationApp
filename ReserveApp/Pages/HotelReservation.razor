@@ -1,6 +1,6 @@
 ﻿@using ReserveApp.Data
 @using ReserveApp.Services
-@inject IReservationService reservationService
+@inject IReservatonService reservationService
 @inject IHotelService hotelService
 
 <div class="modal" style="display: @(showModal ? "block" : "none")">
@@ -139,10 +139,12 @@
             StateHasChanged();
         });
     }
+
     private decimal GetRoomTypePrice(RoomType roomType)
     {
         return roomType == RoomType.Single ? selectedHotel.SingleBedPrice : roomType == RoomType.Double ? selectedHotel.DoubleBedPrice : selectedHotel.FamilySuitePrice;
     }
+
     private async void Reserve()
     {
         errorText = ":";
@@ -160,7 +162,8 @@
             {
                 // reset numberOfAdults to 1
                 numberOfAdults = 1;
-
+                await CalculateTotalAmount();
+                errorText = ": try again please";
                 // You can also return or throw an exception, depending on your error handling strategy
                 return;
             }

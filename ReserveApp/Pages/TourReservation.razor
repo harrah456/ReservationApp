@@ -1,6 +1,6 @@
 ﻿@using ReserveApp.Data
 @using ReserveApp.Services
-@inject IReservationService reservationService
+@inject IReservatonService reservationService
 @inject ITourService tourService
 
 <div class="modal" style="display: @(showModal ? "block" : "none")">
@@ -125,7 +125,7 @@
             // }
             
             // Calculate the number of days for the reservation
-            endDate = startDate.AddDays(selectedTour.Days);
+            endDate = startDate.AddDays(selectedTour.Days - 1);
 
             // Implement the logic to create and save the reservation for each day in the range
 

@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ReserveApp.Migrations
 {
     /// <inheritdoc />
-    public partial class initial : Migration
+    public partial class Initial : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -31,18 +31,7 @@ namespace ReserveApp.Migrations
                 {
                     Id = table.Column<string>(type: "nvarchar(450)", nullable: false),
                     name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    address = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    state = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    city = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    zip = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    extraAddress = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    state2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    city2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    zip2 = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    type = table.Column<int>(type: "int", nullable: false),
-                    Latitude = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Longitude = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Summary = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    passportNo = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     UserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     NormalizedUserName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
                     Email = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
@@ -61,6 +50,38 @@ namespace ReserveApp.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_AspNetUsers", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Hotels",
+                columns: table => new
+                {
+                    HotelId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SingleBedPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DoubleBedPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    FamilySuitePrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Hotels", x => x.HotelId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Tours",
+                columns: table => new
+                {
+                    TourId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Days = table.Column<int>(type: "int", nullable: false),
+                    Cost = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AvailableSpaces = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Tours", x => x.TourId);
                 });
 
             migrationBuilder.CreateTable(
@@ -169,6 +190,62 @@ namespace ReserveApp.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "Reservations",
+                columns: table => new
+                {
+                    ReservationId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    HotelId = table.Column<int>(type: "int", nullable: true),
+                    TourId = table.Column<int>(type: "int", nullable: true),
+                    CustomerId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    ReservationStartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReservationEndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    NumberOfAdults = table.Column<int>(type: "int", nullable: false),
+                    NumberOfChildren = table.Column<int>(type: "int", nullable: false),
+                    RoomType = table.Column<int>(type: "int", nullable: true),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DepositAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IsConfirmed = table.Column<bool>(type: "bit", nullable: false),
+                    ConfirmationDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Reservations", x => x.ReservationId);
+                    table.ForeignKey(
+                        name: "FK_Reservations_Hotels_HotelId",
+                        column: x => x.HotelId,
+                        principalTable: "Hotels",
+                        principalColumn: "HotelId");
+                    table.ForeignKey(
+                        name: "FK_Reservations_Tours_TourId",
+                        column: x => x.TourId,
+                        principalTable: "Tours",
+                        principalColumn: "TourId");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Payments",
+                columns: table => new
+                {
+                    PaymentId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ReservationId = table.Column<int>(type: "int", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Payments", x => x.PaymentId);
+                    table.ForeignKey(
+                        name: "FK_Payments_Reservations_ReservationId",
+                        column: x => x.ReservationId,
+                        principalTable: "Reservations",
+                        principalColumn: "ReservationId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_AspNetRoleClaims_RoleId",
                 table: "AspNetRoleClaims",
@@ -207,6 +284,21 @@ namespace ReserveApp.Migrations
                 column: "NormalizedUserName",
                 unique: true,
                 filter: "[NormalizedUserName] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Payments_ReservationId",
+                table: "Payments",
+                column: "ReservationId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reservations_HotelId",
+                table: "Reservations",
+                column: "HotelId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Reservations_TourId",
+                table: "Reservations",
+                column: "TourId");
         }
 
         /// <inheritdoc />
@@ -228,10 +320,22 @@ namespace ReserveApp.Migrations
                 name: "AspNetUserTokens");
 
             migrationBuilder.DropTable(
+                name: "Payments");
+
+            migrationBuilder.DropTable(
                 name: "AspNetRoles");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
+
+            migrationBuilder.DropTable(
+                name: "Reservations");
+
+            migrationBuilder.DropTable(
+                name: "Hotels");
+
+            migrationBuilder.DropTable(
+                name: "Tours");
         }
     }
 }

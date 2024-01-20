@@ -1,0 +1,185 @@
+﻿@page "/myreservations"
+@using ReserveApp.Data
+@using System.Security.Claims
+@using ReserveApp.Services
+@inject AuthenticationStateProvider authenticationStateProvider
+@inject IReservatonService reservationService
+
+
+<AuthorizeView>
+    <Authorized>
+        <h3>My Reservations</h3>
+
+        @if (reservations != null && reservations.Any())
+        {
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Details</th>
+                        <th>Confirmed</th>
+                        <th>Total</th>
+                        <th>Deposit</th>
+                        <th>Status</th>
+                        <th>Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var reservation in reservations)
+                    {
+                        <tr>
+                            <td>@reservation.ReservationId</td>
+                            <td>@reservation.ReservationStartDate.ToShortDateString()</td>
+                            <td>@reservation.ReservationEndDate.ToShortDateString()</td>
+                            @* <td>@reservation.RoomType</td> *@
+                            <td>
+                                @if (reservation.Hotel != null)
+                                {
+                                    <div>
+                                        <span>Hotel: @reservation.Hotel.Name</span>
+                                        <br />
+                                        <span>Room Type: @reservation.RoomType</span>
+                                    </div>
+                                }
+                                @if (reservation.Tour != null)
+                                {
+                                    <div>
+                                        <span>Tour: @reservation.Tour.Name</span>
+                                        <br />
+                                        <span>Total Spaces: @reservation.NumberOfAdults</span>
+                                    </div>
+                                }
+                            </td>
+                            <td>@(reservation.IsConfirmed ? "Yes" : "No")</td>
+                            <td>@reservation.TotalAmount</td>
+                            <td>
+                                @reservation.DepositAmount
+                                @if (reservation.Status && reservation.DepositAmount < reservation.TotalAmount)
+                                {
+                                    <button class="btn btn-sm btn-info" @onclick="() => ShowPaymentModal(reservation)">Pay</button>
+                                }
+                                @* @if (payment != null)
+                        {
+                        if (payment.ReservationId == reservation.ReservationId)
+                        {
+                        <button class="btn btn-sm btn-success" @onclick="() => ShowMoneyReceiptModal()">MR</button>
+                        }
+                        } *@
+                            </td>
+                            <td>@(reservation.Status ? "Active" : "Inactive")</td>
+                            <td>
+                                @if (DateTime.Now <= reservation.ReservationStartDate.AddDays(-14) && reservation.Status)
+                                {
+                                    <button class="btn btn-sm btn-primary" @onclick="() => EditReservation(reservation)">Edit</button>
+                                }
+                                @if (reservation.Status == true)
+                                {
+                                    <button class="btn btn-sm btn-danger" @onclick="() => CancelReservation(reservation)">Cancel</button>
+
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+        else
+        {
+            <p>No reservations found for the current customer.</p>
+        }
+
+        <MakePayment @ref="paymentModal" OnPaymentComplete="HandlePaymentComplete" />
+
+        <ShowMoneyReceipt @ref="moneyReceiptModal" OnMRComplete="HandleMRComplete" />
+
+        <CancelReservation @ref="cancelReservationModal" OnCancelComplete="HandleReservationCancelComplete" />
+
+        <EditReservation @ref="editReservationModal" OnEditComplete="HandleReservationEditComplete" />
+
+    </Authorized>
+    <NotAuthorized>
+        Nothing to show. Please login
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+
+    List<Reservation> reservations = new List<Reservation>();
+    private Payment payment;
+    private MakePayment paymentModal;
+    private CancelReservation cancelReservationModal;
+    private EditReservation editReservationModal;
+    private ShowMoneyReceipt moneyReceiptModal;
+    string userId;
+
+    protected async override Task OnInitializedAsync()
+    {
+
+        var authState = await authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        // Get the user ID
+        userId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        await LoadMyReservations();
+
+
+    }
+
+    private async Task LoadMyReservations()
+    {
+        reservations = await reservationService.GetReservationsByCustomerId(userId);
+    }
+
+    private async Task ShowPaymentModal(Reservation reservation)
+    {
+        await paymentModal.Show(reservation);
+    }
+
+    private async Task HandlePaymentComplete(Payment savedPayment)
+    {
+        payment = savedPayment;
+        await reservationService.UpdateDepositAmount(payment.ReservationId, payment.Amount);
+        await ShowMoneyReceiptModal();
+        await LoadMyReservations();
+    }
+
+    private async Task HandleMRComplete()
+    {
+        // ok
+    }
+
+    private async Task ShowMoneyReceiptModal()
+    {
+        if (payment != null)
+        {
+            if (payment.PaymentId != 0)
+            {
+                await moneyReceiptModal.Show(payment);
+            }
+        }
+    }
+
+    private async Task EditReservation(Reservation reservation)
+    {
+        await editReservationModal.Show(reservation);
+    }
+
+    private async void CancelReservation(Reservation reservation)
+    {
+        await cancelReservationModal.Show(reservation);
+    }
+
+
+    private async Task HandleReservationCancelComplete()
+    {
+        await LoadMyReservations();
+    }
+
+    private async Task HandleReservationEditComplete()
+    {
+        await LoadMyReservations();
+    }
+
+}

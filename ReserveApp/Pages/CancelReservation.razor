@@ -1,0 +1,96 @@
+﻿@using ReserveApp.Data
+@using ReserveApp.Services
+@inject IReservatonService reservationService
+@inject IPaymentService paymentService
+
+<div class="modal" style="display: @(showModal ? "block" : "none")">
+    <div class="modal-dialog" role="document">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Make Payment</h3>
+            </div>
+            @if (selectedReservation != null)
+            {
+                <div class="modal-body">
+
+                    From: @selectedReservation.ReservationStartDate to @selectedReservation.ReservationEndDate
+
+                    @if (selectedReservation.Tour != null)
+                    {
+                        <div>
+                            <h6>@selectedReservation.Tour.Name</h6>
+                        </div>
+                    }
+                    @if (selectedReservation.Hotel != null)
+                    {
+                        <div>
+                            <h6>@selectedReservation.Hotel.Name</h6>
+                        </div>
+                    }
+
+                    <div class="text-danger">@errorText</div>
+
+                    @* <div class="form-group row">
+                        <label class="col-6" for="numberOfChildren">Administrative Charge:</label>
+                        <div class="col-6">
+                            <input class="form-control-sm" type="number" min="1" id="depositAmount" @bind="@depositAmount" />
+                        </div>
+                    </div> *@
+                    <!-- Include other form fields as needed -->
+                </div>
+                <div class="modal-footer">
+                    <button @onclick="ProcessCalcel">Cancel Now</button>
+                    <button @onclick="CloseModal">Close</button>
+                </div>
+
+            }
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private string errorText = ":";
+    private bool showModal = false; // Add this state variable
+    private Reservation selectedReservation { get; set; } = null;
+
+    [Parameter]
+    public EventCallback OnCancelComplete { get; set; }
+
+    public async Task Show(Reservation reservation)
+    {
+        selectedReservation = reservation;
+        errorText = ":";
+        showModal = true;
+    }
+
+    private async Task ProcessCalcel()
+    {
+        if (selectedReservation != null)
+        {
+            if (DateTime.Now >= selectedReservation.ReservationStartDate.AddDays(-5))
+            {
+                errorText = ": Cannot cancel this reservation. Access denied";
+                return;
+            }
+            var cancelled = await reservationService.CancelReservation(selectedReservation);
+
+            if (cancelled)
+            {
+                await OnCancelComplete.InvokeAsync();
+            }
+            else
+            {
+                errorText = ": Cancellation failed";
+            }
+        }
+    }
+
+    private void CloseModal()
+    {
+        // close the modal
+        showModal = false;
+
+    }
+}

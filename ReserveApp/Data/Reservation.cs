@@ -20,6 +20,9 @@ namespace ReserveApp.Data
         public decimal DepositAmount { get; set; }
         public bool IsConfirmed { get; set; }
         public DateTime? ConfirmationDate { get; set; }
+        public bool Status { get; set; } = true;
+        public List<Payment> Payments { get; set; } = new List<Payment>();
+
 
     }
 

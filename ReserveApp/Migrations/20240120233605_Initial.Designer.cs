@@ -12,8 +12,8 @@ using ReserveApp.Data;
 namespace ReserveApp.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20240113182432_ModificationOfHotelAndReservationModel")]
-    partial class ModificationOfHotelAndReservationModel
+    [Migration("20240120233605_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -188,6 +188,30 @@ namespace ReserveApp.Migrations
                     b.ToTable("Hotels");
                 });
 
+            modelBuilder.Entity("ReserveApp.Data.Payment", b =>
+                {
+                    b.Property<int>("PaymentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PaymentId"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("ReservationId")
+                        .HasColumnType("int");
+
+                    b.HasKey("PaymentId");
+
+                    b.HasIndex("ReservationId");
+
+                    b.ToTable("Payments");
+                });
+
             modelBuilder.Entity("ReserveApp.Data.Reservation", b =>
                 {
                     b.Property<int>("ReservationId")
@@ -196,7 +220,7 @@ namespace ReserveApp.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReservationId"));
 
-                    b.Property<DateTime>("ConfirmationDate")
+                    b.Property<DateTime?>("ConfirmationDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("CustomerId")
@@ -224,8 +248,11 @@ namespace ReserveApp.Migrations
                     b.Property<DateTime>("ReservationStartDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<int>("RoomType")
+                    b.Property<int?>("RoomType")
                         .HasColumnType("int");
+
+                    b.Property<bool>("Status")
+                        .HasColumnType("bit");
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(18,2)");
@@ -236,6 +263,8 @@ namespace ReserveApp.Migrations
                     b.HasKey("ReservationId");
 
                     b.HasIndex("HotelId");
+
+                    b.HasIndex("TourId");
 
                     b.ToTable("Reservations");
                 });
@@ -253,6 +282,9 @@ namespace ReserveApp.Migrations
 
                     b.Property<decimal>("Cost")
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("Days")
+                        .HasColumnType("int");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -387,14 +419,43 @@ namespace ReserveApp.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ReserveApp.Data.Payment", b =>
+                {
+                    b.HasOne("ReserveApp.Data.Reservation", "Reservation")
+                        .WithMany("Payments")
+                        .HasForeignKey("ReservationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Reservation");
+                });
+
             modelBuilder.Entity("ReserveApp.Data.Reservation", b =>
                 {
-                    b.HasOne("ReserveApp.Data.Hotel", null)
+                    b.HasOne("ReserveApp.Data.Hotel", "Hotel")
                         .WithMany("Reservations")
                         .HasForeignKey("HotelId");
+
+                    b.HasOne("ReserveApp.Data.Tour", "Tour")
+                        .WithMany("Reservations")
+                        .HasForeignKey("TourId");
+
+                    b.Navigation("Hotel");
+
+                    b.Navigation("Tour");
                 });
 
             modelBuilder.Entity("ReserveApp.Data.Hotel", b =>
+                {
+                    b.Navigation("Reservations");
+                });
+
+            modelBuilder.Entity("ReserveApp.Data.Reservation", b =>
+                {
+                    b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("ReserveApp.Data.Tour", b =>
                 {
                     b.Navigation("Reservations");
                 });

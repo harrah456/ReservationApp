@@ -184,7 +184,7 @@
     private void InitiateReservation()
     {
         // Show the reservation modal or navigate to reservation page
-        reservationModal.Show(selectedHotel, selectedTour, (DateTime)startDate.Value, (DateTime)startDate.Value.AddDays(selectedTour.Days), userId);
+        reservationModal.Show(selectedHotel, selectedTour, (DateTime)startDate.Value, (DateTime)startDate.Value.AddDays(selectedTour.Days - 1), userId);
     }
 
     private async Task HandleReservationComplete()
@@ -198,7 +198,7 @@
 
     private async Task LoadHolidayData()
     {
-        allHotels = await hotelService.GetAllHotels();
-        allTours = await tourService.GetAllTours();
+        searchHotels = await hotelService.GetAllHotels();
+        searchTours = await tourService.GetAllTours();
     }
 }

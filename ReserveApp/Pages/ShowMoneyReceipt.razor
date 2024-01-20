@@ -1,0 +1,56 @@
+﻿@using ReserveApp.Data
+@using ReserveApp.Services
+@inject IPaymentService paymentService
+
+<div class="modal" style="display: @(showModal ? "block" : "none")">
+    <div class="modal-dialog" role="document">
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Money Receipt</h3>
+            </div>
+            @if (showReceipt)
+            {
+                <div class="modal-body">
+                    @if (_payment != null)
+                    {
+                        <div>
+                            Customer Id: @_payment.Reservation.CustomerId<br/>
+                            Amount: @_payment.Amount<br/>
+                            Payment Date: @_payment.PaymentDate
+                        </div>
+                    }
+                </div>
+                <div class="modal-footer">
+                    <button @onclick="CloseModal">Close</button>
+                </div>
+
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private string errorText = ":";
+    private bool showModal = false; // Add this state variable
+    private Payment? _payment;
+    private bool showReceipt = false;
+
+    [Parameter]
+    public EventCallback OnMRComplete { get; set; }
+
+    public async Task Show(Payment payment)
+    {
+        _payment = payment;
+        showReceipt = true;
+        showModal = true;
+    }
+
+    private async Task CloseModal()
+    {
+        await OnMRComplete.InvokeAsync();
+        // close the modal
+        showModal = false;
+
+    }
+}

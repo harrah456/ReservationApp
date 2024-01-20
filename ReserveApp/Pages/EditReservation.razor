@@ -9,34 +9,37 @@
 
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Make Reservation</h3>
+                <h3>Edit Reservation</h3>
             </div>
             <div class="modal-body">
                 <!-- Include form fields for reservation details -->
-                <div>
-                    @if (selectedTour != null)
-                    {
-                        <h6>@selectedTour.Name</h6>
-                        <p>
-                            Cost: $@selectedTour.Cost
-                            Available Spaces: $@selectedTour.AvailableSpaces
-                        </p>
-                    }
+                @if (reservation != null)
+                {
+                    <div>
+                        @if (reservation.Tour != null)
+                        {
+                            <h6>@reservation.Tour.Name</h6>
+                            <p>
+                                Cost: $@reservation.Tour.Cost
+                                Available Spaces: $@reservation.Tour.AvailableSpaces
+                            </p>
+                        }
 
-                </div>
-                <hr/>
-                <div>
-                    @if (selectedHotel != null)
-                    {
-                        <h6>@selectedHotel.Name</h6>
-                        <p>
-                            Single: $@selectedHotel.SingleBedPrice
-                            Double: $@selectedHotel.DoubleBedPrice
-                            Suite: $@selectedHotel.FamilySuitePrice
-                        </p>
-                    }
+                    </div>
+                    <hr />
+                    <div>
+                        @if (reservation.Hotel != null)
+                        {
+                            <h6>@reservation.Hotel.Name</h6>
+                            <p>
+                                Single: $@reservation.Hotel.SingleBedPrice
+                                Double: $@reservation.Hotel.DoubleBedPrice
+                                Suite: $@reservation.Hotel.FamilySuitePrice
+                            </p>
+                        }
 
-                </div>
+                    </div>
+                }
                 <div class="input-group  mb-3">
                     <div class="input-group-prepend form-floating">
                         <input type="date" id="startDate" readonly="readonly" class="form-control" @bind="startDate" aria-required="true" />
@@ -50,6 +53,7 @@
                     </div>
                 </div>
                 <div class="text-danger">@errorText</div>
+                <div class="text-info">5% surcharge applicable</div>
                 <div class="form-group row">
                     <label class="col-6" for="roomType">Room Type:</label>
                     <div class="col-6">
@@ -90,7 +94,7 @@
                 <!-- Include other form fields as needed -->
             </div>
             <div class="modal-footer">
-                <button @onclick="Reserve">Reserve</button>
+                <button @onclick="Edit">Save</button>
                 <button @onclick="CloseModal">Close</button>
             </div>
         </div>
@@ -103,27 +107,39 @@
     private int numberOfAdults = 1;
     private int numberOfChildren = 0;
     private bool showModal = false; // Add this state variable
-    private Hotel selectedHotel = new();
-    private Tour selectedTour = new();
+    private Reservation reservation { get; set; }
     private DateTime startDate { get; set; } = DateTime.Now;
     private DateTime endDate { get; set; } = DateTime.Now;
     private decimal totalAmount { get; set; }
     private decimal depositAmount { get; set; }
+    private decimal initialDepositAmount { get; set; }
     private string _userId = "";
-    private decimal discountPercent = 0;
+    private decimal discountPercent { get; set; } = 0;
 
     [Parameter]
-    public EventCallback OnReservationComplete { get; set; }
+    public EventCallback OnEditComplete { get; set; }
 
 
-    public void Show(Hotel hotel, Tour tour, DateTime date1, DateTime date2, string userId)
+    public async Task Show(Reservation actualReservation)
     {
-        selectedHotel = hotel;
-        selectedTour = tour;
-        startDate = date1;
-        endDate = date2;
-        _userId = userId;
-        discountPercent = ReservationService.GetDiscountRate(selectedRoomType);
+        reservation = actualReservation;
+        startDate = actualReservation.ReservationStartDate;
+        endDate = actualReservation.ReservationEndDate;
+        selectedRoomType = actualReservation.RoomType == null ? RoomType.Single : (RoomType)actualReservation.RoomType;
+        numberOfAdults = actualReservation.NumberOfAdults;
+        numberOfChildren = actualReservation.NumberOfChildren;
+        totalAmount = actualReservation.TotalAmount;
+        depositAmount = actualReservation.DepositAmount;
+        initialDepositAmount = actualReservation.DepositAmount;
+
+        if (actualReservation.Hotel != null && actualReservation.Tour != null)
+        {
+            discountPercent = ReservationService.GetDiscountRate(selectedRoomType);
+        }
+        else
+        {
+            discountPercent = 0m;
+        }
         showModal = true;
     }
 
@@ -132,32 +148,47 @@
         await InvokeAsync(() =>
         {
             errorText = ":";
+            decimal roomTypePrice = 0m;
+            decimal tourCost = 0m;
+            decimal hotelCost = 0m;
+            int totalDays = (int)(endDate.Date - startDate.Date).TotalDays + 1;
 
-            // Calculate total amount when either date range or room type changes
-            if (selectedRoomType != null)
+            if (reservation.Tour != null)
             {
-                // Calculate the total amount based on the selected hotel and tour
-                decimal roomTypePrice = GetRoomTypePrice(selectedRoomType);
+                tourCost = reservation.Tour.Cost * numberOfAdults;
+                totalDays = reservation.Tour.Days;
+            }
+
+            if (reservation.Hotel != null)
+            {
+                roomTypePrice = GetRoomTypePrice(selectedRoomType);
+                hotelCost = roomTypePrice * totalDays;
+            }
+
+            if (reservation.Hotel != null && reservation.Tour != null)
+            {
                 discountPercent = ReservationService.GetDiscountRate(selectedRoomType);
-                totalAmount = (roomTypePrice * selectedTour.Days) + (selectedTour.Cost * numberOfAdults);
-                totalAmount = totalAmount - (totalAmount * (discountPercent / 100));
             }
-            else
-            {
-                // Set total amount to 0 or handle accordingly based on your requirements
-                totalAmount = 0;
-            }
+
+            totalAmount = hotelCost + tourCost;
+            totalAmount = totalAmount + (totalAmount * .05m); // surchange
+            totalAmount = totalAmount - (totalAmount * (discountPercent / 100));
             StateHasChanged();
         });
     }
     private decimal GetRoomTypePrice(RoomType roomType)
     {
-        return roomType == RoomType.Single ? selectedHotel.SingleBedPrice : roomType == RoomType.Double ? selectedHotel.DoubleBedPrice : selectedHotel.FamilySuitePrice;
+        return roomType == RoomType.Single ? reservation.Hotel.SingleBedPrice : roomType == RoomType.Double ? reservation.Hotel.DoubleBedPrice : reservation.Hotel.FamilySuitePrice;
     }
-    private async void Reserve()
+
+    private async Task Edit()
     {
         errorText = ":";
-
+        if (DateTime.Now > startDate.Date.AddDays(-14))
+        {
+            errorText = ": Modification available 14 days before booking date";
+            return;
+        }
         // Check if start date is before or equal to end date
         if (startDate <= endDate)
         {
@@ -168,45 +199,40 @@
                 numberOfAdults = 1;
                 await CalculateTotalAmount();
                 errorText = ": try again please";
-
                 // You can also return or throw an exception, depending on your error handling strategy
                 return;
             }
 
             // Create and save the reservation for each day
-            Reservation reservation = new Reservation
-                {
-                    HotelId = selectedHotel.HotelId,
-                    TourId = selectedTour.TourId,
-                    CustomerId = _userId,
-                    ReservationStartDate = startDate,
-                    ReservationEndDate = endDate, 
-                    RoomType = selectedRoomType,
-                    NumberOfAdults = numberOfAdults,
-                    NumberOfChildren = numberOfChildren,
-                    // Other reservation details
 
-                    // Calculate and set deposit and total amount based on your logic
-                    DepositAmount = depositAmount,
-                    TotalAmount = totalAmount,
+            reservation.ReservationStartDate = startDate;
+            reservation.ReservationEndDate = endDate;
+            reservation.RoomType = selectedRoomType;
+            reservation.NumberOfAdults = numberOfAdults;
+            reservation.NumberOfChildren = numberOfChildren;
+            // Other reservation details
 
-                    IsConfirmed = depositAmount >= (totalAmount * (decimal)0.20), // The reservation is not confirmed until the deposit is made
-                    ConfirmationDate = depositAmount >= (totalAmount * (decimal)0.20) ? DateTime.Now : null
-                };
+            // Calculate and set deposit and total amount based on your logic
+            reservation.DepositAmount = depositAmount;
+            reservation.TotalAmount = totalAmount;
+
+            reservation.IsConfirmed = depositAmount >= (totalAmount * (decimal)0.20); // The reservation is not confirmed until the deposit is made
+            reservation.ConfirmationDate = depositAmount >= (totalAmount * (decimal)0.20) ? DateTime.Now : null;
 
             // Save the reservation to the database
-            bool success = await reservationService.CreateReservation(reservation);
+            bool success = await reservationService.EditReservation(reservation, initialDepositAmount);
+
             if (success)
             {
                 // Notify the parent component about the reservation completion
-                await OnReservationComplete.InvokeAsync();
+                await OnEditComplete.InvokeAsync();
 
                 // Close the modal
                 CloseModal();
             }
             else
             {
-                Console.WriteLine("Reservation Creation failed");
+                Console.WriteLine("Reservation updation failed");
             }
 
         }
@@ -226,4 +252,3 @@
 
     }
 }
-
